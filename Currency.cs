@@ -11,12 +11,12 @@ namespace ConsoleApp1
         public string ValueString { get; set; }
         public string Denomination { get; set; }
         public string DenominationPlural { get; set; }
-        public double Value
+        public decimal Value
         {
             get
             {
-                double val;
-                double.TryParse(ValueString, out val);
+                decimal val;
+                decimal.TryParse(ValueString, out val);
                 return val;
             }
         }

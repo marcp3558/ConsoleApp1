@@ -14,7 +14,7 @@ namespace ConsoleApp1
 
             var transList = new List<Transaction>();
 
-            transList.Add(new Transaction(cost: 3.33, amtTendered: 5.00));
+            transList.Add(new Transaction(cost: new decimal(3.33), amtTendered: new decimal(5.00)));
 
             foreach (var tran in transList)
             {

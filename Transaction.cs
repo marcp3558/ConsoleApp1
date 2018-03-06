@@ -8,20 +8,20 @@ namespace ConsoleApp1
 {
     public class Transaction
     {
-        private double _cost;
-        private double _amtTendered;
-        private double _rawChange;
+        private readonly decimal _cost;
+        private readonly decimal _amtTendered;
+        private readonly decimal _rawChange;
 
         private List<Tuple<Currency, int>> Change;
 
-        public Transaction(double cost, double amtTendered)
+        public Transaction(decimal cost, decimal amtTendered)
         {
-            if (Math.Abs(cost) < 0)
+            if (cost < 0)
             {
                 throw new InvalidOperationException("Error - cost cannot be less than 0");
             }
 
-            if (Math.Abs(amtTendered) < 0)
+            if (amtTendered < 0)
             {
                 throw new InvalidOperationException("Error - amt tendered cannot be less than 0");
             }
@@ -96,13 +96,12 @@ namespace ConsoleApp1
             }
 
             var allCurrenciesList = Currencies.CurrencyList.OrderByDescending(c => c.Value).ToList();
-            DeductCurrency(_rawChange, allCurrenciesList);
+            DeductFromChange(_rawChange, allCurrenciesList);
 
-            //Aggregate the list to get rid of duplicates with the same currency type
-            //Change = Change.Aggregate()
+            AggregateChange();
         }
 
-        private void DeductCurrency(double rollingChange, List<Currency> currentCurrencyList)
+        private void DeductFromChange(decimal rollingChange, List<Currency> currentCurrencyList)
         {
             //remove currencies that are worth more than the raw change value
             var validCurrencyList = new List<Currency>();
@@ -127,14 +126,14 @@ namespace ConsoleApp1
                 Change.Add(new Tuple<Currency, int>(randomCurrencyToUse, randomNumberOfCurrency));
             }
 
-            rollingChange -= Math.Round(randomCurrencyToUse.Value * randomNumberOfCurrency, 2, MidpointRounding.ToEven);
+            rollingChange -= Math.Round(randomCurrencyToUse.Value * randomNumberOfCurrency, 2);
 
-            if (rollingChange <= 0.01)
+            if (rollingChange == 0)
             {
                 return;
             }
 
-            DeductCurrency(rollingChange, validCurrencyList);
+            DeductFromChange(rollingChange, validCurrencyList);
         }
 
         private void CalcChangeNormal()
@@ -151,14 +150,32 @@ namespace ConsoleApp1
 
                 rollingChange -= Math.Round(currency.Value * totalForThisCurrency, 2, MidpointRounding.ToEven);
 
-                if (rollingChange <= 0.01)
+                if (rollingChange == 0)
                 {
                     break;
                 }
             }
         }
 
-        private static int CalculateNumberOfDenoms(double cost, Currency currency)
+        private void AggregateChange()
+        {
+            var newChangeList = new List<Tuple<Currency, int>>();
+
+            foreach (var c in Currencies.CurrencyList)
+            {
+                var currentCurrency = Change.Where(change => change.Item1.Denomination.Equals(c.Denomination));
+                var totalCur = currentCurrency.Sum(cur => cur.Item2);
+
+                if (totalCur > 0)
+                {
+                    newChangeList.Add(new Tuple<Currency, int>(c, totalCur));
+                }
+            }
+
+            Change = newChangeList;
+        }
+
+        private static int CalculateNumberOfDenoms(decimal cost, Currency currency)
         {
             var dividend = Math.Floor(cost / currency.Value);
             return Convert.ToInt32(dividend);
