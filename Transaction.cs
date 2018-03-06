@@ -39,7 +39,7 @@ namespace ConsoleApp1
 
         public void CalculateChange()
         {
-            if (_rawChange % 3 > 0)
+            if ((_cost * 100) % 3 > 0)
             {
                 CalcChangeNormal();
             }
@@ -94,11 +94,52 @@ namespace ConsoleApp1
             {
                 throw new InvalidOperationException("No currencies to choose from");
             }
+
+            var allCurrenciesList = Currencies.CurrencyList.OrderByDescending(c => c.Value).ToList();
+            DeductCurrency(_rawChange, allCurrenciesList);
+
+            //Aggregate the list to get rid of duplicates with the same currency type
+            //Change = Change.Aggregate()
+        }
+
+        private void DeductCurrency(double rollingChange, List<Currency> currentCurrencyList)
+        {
+            //remove currencies that are worth more than the raw change value
+            var validCurrencyList = new List<Currency>();
+
+            foreach (var currency in currentCurrencyList)
+            {
+                if (currency.Value <= rollingChange)
+                {
+                    validCurrencyList.Add(currency);
+                }
+            }
+
+            var validCurrencyCount = validCurrencyList.Count - 1;
+            var randomCurrencyNumber = GetRandomNumber(0, validCurrencyCount);
+            var randomCurrencyToUse = validCurrencyList[randomCurrencyNumber];
+
+            var totalForThisCurrency = CalculateNumberOfDenoms(rollingChange, randomCurrencyToUse);
+            var randomNumberOfCurrency = GetRandomNumber(1, totalForThisCurrency);
+
+            if (totalForThisCurrency > 0)
+            {
+                Change.Add(new Tuple<Currency, int>(randomCurrencyToUse, randomNumberOfCurrency));
+            }
+
+            rollingChange -= Math.Round(randomCurrencyToUse.Value * randomNumberOfCurrency, 2, MidpointRounding.ToEven);
+
+            if (rollingChange <= 0.01)
+            {
+                return;
+            }
+
+            DeductCurrency(rollingChange, validCurrencyList);
         }
 
         private void CalcChangeNormal()
         {
-            var currencyList = Currencies.CurrencyList.OrderByDescending(c => c.Value);
+            var currencyList = Currencies.CurrencyList.OrderByDescending(c => c.Value).ToList();
             var rollingChange = _rawChange;
             foreach (var currency in currencyList)
             {
@@ -110,7 +151,7 @@ namespace ConsoleApp1
 
                 rollingChange -= Math.Round(currency.Value * totalForThisCurrency, 2, MidpointRounding.ToEven);
 
-                if (rollingChange <= 0)
+                if (rollingChange <= 0.01)
                 {
                     break;
                 }
