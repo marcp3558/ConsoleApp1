@@ -6,10 +6,21 @@ using System.Threading.Tasks;
 
 namespace ConsoleApp1
 {
-    class Program
+    public class Program
     {
         static void Main(string[] args)
         {
+            Currencies.Initialize();
+
+            var transList = new List<Transaction>();
+
+            transList.Add(new Transaction(0.52, 0.62));
+
+            foreach (var tran in transList)
+            {
+                tran.CalculateChange();
+                tran.DisplayChange();
+            }
         }
     }
 }
